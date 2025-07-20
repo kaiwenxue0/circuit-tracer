@@ -165,18 +165,24 @@ class ReplacementModel(HookedTransformer):
         feature_output_hook: str,
         scan: Optional[Union[str, List[str]]],
     ):
-        for transcoder in transcoders.values():
-            transcoder.to(self.cfg.device, self.cfg.dtype)
+        
+        # 多卡分配设置
+        num_gpus = 8  # 有8块卡
+        transcoder_modules = []
 
-        self.add_module(
-            "transcoders",
-            nn.ModuleList([transcoders[i] for i in range(self.cfg.n_layers)]),
-        )
-        self.d_transcoder = transcoder.d_transcoder
+        for i in range(self.cfg.n_layers):
+            device_i = f"cuda:{i % num_gpus}"
+            if i in transcoders:
+                transcoder = transcoders[i].to(device_i, self.cfg.dtype)
+            transcoder_modules.append(transcoder)
+
+        self.add_module("transcoders", nn.ModuleList(transcoder_modules))
+
+        self.d_transcoder = transcoder_modules[0].d_transcoder if hasattr(transcoder_modules[0], 'd_transcoder') else None
         self.feature_input_hook = feature_input_hook
         self.original_feature_output_hook = feature_output_hook
         self.feature_output_hook = feature_output_hook + ".hook_out_grad"
-        self.skip_transcoder = transcoder.W_skip is not None
+        self.skip_transcoder = hasattr(transcoder_modules[0], 'W_skip') and transcoder_modules[0].W_skip is not None
         self.scan = scan
 
         for block in self.blocks:
@@ -229,6 +235,7 @@ class ReplacementModel(HookedTransformer):
                 skip = transcoder.compute_skip(skip_input_activation)
             else:
                 skip = skip_input_activation * 0
+            skip = skip.to(acts.device)
             return grad_hook(skip + (acts - skip).detach())
 
         # add feature input hook
@@ -279,6 +286,7 @@ class ReplacementModel(HookedTransformer):
         activation_matrix = [None] * self.cfg.n_layers
 
         def cache_activations(acts, hook, layer, zero_bos):
+            acts = acts.to(self.transcoders[layer].W_enc.device)
             transcoder_acts = (
                 self.transcoders[layer]
                 .encode(acts, apply_activation_function=apply_activation_function)
@@ -404,7 +412,12 @@ class ReplacementModel(HookedTransformer):
         # hook into MLP out to compute errors
         def compute_error_hook(acts, hook, layer):
             in_hook = f"blocks.{layer}.{self.feature_input_hook}"
-            reconstruction = self.transcoders[layer](mlp_in_cache[in_hook])
+           
+            input_acts = mlp_in_cache[in_hook]
+            transcoder = self.transcoders[layer]
+            input_acts = input_acts.to(transcoder.W_enc.device)
+            reconstruction = transcoder(input_acts)
+            acts = acts.to(reconstruction.device) 
             error = acts - reconstruction
             error_vectors[layer] = error
             total_variance = (acts - acts.mean(dim=-2, keepdim=True)).pow(2).sum(dim=-1)
@@ -423,7 +436,8 @@ class ReplacementModel(HookedTransformer):
         if zero_bos:
             error_vectors[:, 0] = 0
 
-        activation_matrix = torch.stack(activation_matrix)
+        activation_matrix = torch.stack([t.to(self.cfg.device) for t in activation_matrix])
+
         if sparse:
             activation_matrix = activation_matrix.coalesce()
 

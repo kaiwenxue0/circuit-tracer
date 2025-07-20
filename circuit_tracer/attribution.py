@@ -299,11 +299,14 @@ def select_scaled_decoder_vecs(
     suitable as ``inject_values`` during gradient overrides.
     """
 
+    device = activations.device
     rows: List[torch.Tensor] = []
     for layer, row in enumerate(activations):
         _, feat_idx = row.coalesce().indices()
-        rows.append(transcoders[layer].W_dec[feat_idx])
-    return torch.cat(rows) * activations.values()[:, None]
+        W_dec = transcoders[layer].W_dec.to(device)
+        rows.append(W_dec[feat_idx])
+    values = activations.values().to(device)[:, None]
+    return torch.cat(rows) * values
 
 
 @torch.no_grad()
@@ -312,10 +315,13 @@ def select_encoder_rows(
 ) -> torch.Tensor:
     """Return encoder rows for **active** features only."""
 
+    device = activation_matrix.device
     rows: List[torch.Tensor] = []
     for layer, row in enumerate(activation_matrix):
         _, feat_idx = row.coalesce().indices()
-        rows.append(transcoders[layer].W_enc.T[feat_idx])
+        W_enc = transcoders[layer].W_enc.T
+        W_enc = W_enc.to(device) 
+        rows.append(W_enc[feat_idx])
     return torch.cat(rows)
 
 

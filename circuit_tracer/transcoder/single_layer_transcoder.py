@@ -64,39 +64,61 @@ class SingleLayerTranscoder(nn.Module):
 
         self.activation_function = activation_function
 
-    def encode(self, input_acts, apply_activation_function: bool = True):
+    def encode(self, input_acts, k=0, apply_activation_function: bool = True):
+        
         pre_acts = input_acts.to(self.W_enc.dtype) @ self.W_enc + self.b_enc
         if not apply_activation_function:
             return pre_acts
         acts = self.activation_function(pre_acts)
-        return acts
-
-    def decode(self, acts):
-        if acts.is_sparse:
-            return (
-                torch.bmm(acts, self.W_dec.unsqueeze(0).expand(acts.size(0), *self.W_dec.size()))
-                + self.b_dec
-            )
+        if k != 0:
+            acts, indices = torch.topk(acts, k, dim=-1, sorted=False)
+            return acts, indices
         else:
-            return acts @ self.W_dec + self.b_dec
+            return acts
+
+    def decode(self, acts, indices=None):
+        def eager_decode(top_indices, top_acts, W_dec):
+            return nn.functional.embedding_bag(
+                top_indices, W_dec.mT, per_sample_weights=top_acts, mode="sum"
+            )
+        if indices is not None:
+            y = eager_decode(indices, acts.to(self.dtype), self.W_dec.mT)
+            return y + self.b_dec
+        else:
+            if acts.is_sparse:
+                return (
+                    torch.bmm(acts, self.W_dec.unsqueeze(0).expand(acts.size(0), *self.W_dec.size()))
+                    + self.b_dec
+                )
+            else:
+                return acts @ self.W_dec + self.b_dec
 
     def compute_skip(self, input_acts):
         if self.W_skip is not None:
+            input_acts = input_acts.to(self.W_skip.device)
             return input_acts @ self.W_skip.T
         else:
             raise ValueError("Transcoder has no skip connection")
 
-    def forward(self, input_acts):
-        transcoder_acts = self.encode(input_acts)
-        decoded = self.decode(transcoder_acts)
-        decoded = decoded.detach()
-        decoded.requires_grad = True
+    def forward(self, input_acts, k=0):
+        if k == 0:
+            transcoder_acts = self.encode(input_acts)
+            decoded = self.decode(transcoder_acts)
+            decoded = decoded.detach()
+            decoded.requires_grad = True
 
-        if self.W_skip is not None:
-            skip = self.compute_skip(input_acts)
-            decoded = decoded + skip
+            if self.W_skip is not None:
+                skip = self.compute_skip(input_acts)
+                decoded = decoded + skip
 
-        return decoded
+            return decoded
+        else:
+            transcoder_acts, indices = self.encode(input_acts, k)
+            decoded = self.decode(transcoder_acts, indices)
+            decoded = decoded.detach()
+            decoded.requires_grad = True
+            return decoded
+            
 
 
 def load_gemma_scope_transcoder(
@@ -141,9 +163,13 @@ def load_relu_transcoder(
     device: torch.device = torch.device("cuda"),
     dtype: Optional[torch.dtype] = torch.float32,
 ):
-    param_dict = load_file(path, device=device.type)
-    W_enc = param_dict["W_enc"]
-    d_sae, d_model = W_enc.shape
+    param_dict = load_file(path, device="cpu")
+    
+
+    param_dict["W_enc"] = param_dict.pop("encoder.weight")
+    param_dict["b_enc"] = param_dict.pop("encoder.bias", None)
+    param_dict["W_dec"] = param_dict["W_dec"]  # 已经存在就不动
+    param_dict["b_dec"] = param_dict.get("b_dec", None)
 
     param_dict["W_enc"] = param_dict["W_enc"].T.contiguous()
     param_dict["W_dec"] = param_dict["W_dec"].T.contiguous()
@@ -152,15 +178,14 @@ def load_relu_transcoder(
     activation_function = F.relu
     with torch.device("meta"):
         transcoder = SingleLayerTranscoder(
-            d_model,
-            d_sae,
+            param_dict["W_enc"].shape[0],
+            param_dict["W_enc"].shape[1],
             activation_function,
             layer,
-            skip_connection=param_dict["W_skip"] is not None,
+            skip_connection="W_skip" in param_dict,
         )
     transcoder.load_state_dict(param_dict, assign=True)
-    return transcoder.to(dtype)
-
+    return transcoder.to(dtype).cpu()
 
 TranscoderSettings = namedtuple(
     "TranscoderSettings", ["transcoders", "feature_input_hook", "feature_output_hook", "scan"]
@@ -169,7 +194,7 @@ TranscoderSettings = namedtuple(
 
 def load_transcoder_set(
     transcoder_config_file: str,
-    device: Optional[torch.device] = torch.device("cuda"),
+    device: Optional[torch.device] = "cpu",
     dtype: Optional[torch.dtype] = torch.float32,
 ) -> TranscoderSettings:
     """Loads either a preset set of transformers, or a set specified by a file.
@@ -189,10 +214,17 @@ def load_transcoder_set(
         package_path = resources.files(circuit_tracer)
         transcoder_config_file = package_path / "configs/gemmascope-l0-0.yaml"
         scan = "gemma-2-2b"
+    elif transcoder_config_file == "llama3-8b":
+        package_path = resources.files(circuit_tracer)
+        transcoder_config_file = package_path / "configs/llama3_8B.yaml"
+        scan = "llama-3-8b"
     elif transcoder_config_file == "llama":
         package_path = resources.files(circuit_tracer)
         transcoder_config_file = package_path / "configs/llama-relu.yaml"
         scan = "llama-3-131k-relu"
+    elif transcoder_config_file == "llada":
+        package_path = resources.files(circuit_tracer)
+        transcoder_config_file = package_path / "configs/llada1.5_8B.yaml"
 
     with open(transcoder_config_file, "r") as file:
         config = yaml.safe_load(file)
@@ -206,10 +238,10 @@ def load_transcoder_set(
             for transcoder_config in sorted_transcoder_configs
         ]
 
-    hf_paths = [
-        t["filepath"] for t in sorted_transcoder_configs if t["filepath"].startswith("hf://")
-    ]
-    local_map = download_hf_uris(hf_paths)
+    # hf_paths = [
+    #     t["filepath"] for t in sorted_transcoder_configs if t["filepath"].startswith("hf://")
+    # ]
+    # local_map = download_hf_uris(hf_paths)
 
     transcoders = {}
     for transcoder_config in sorted_transcoder_configs:
@@ -232,7 +264,7 @@ def load_transcoder_set(
         assert transcoder.layer_idx not in transcoders, (
             f"Got multiple transcoders for layer {transcoder.layer_idx}"
         )
-        transcoders[transcoder.layer_idx] = transcoder
+        transcoders[transcoder.layer_idx] = transcoder.cpu()
 
     # we don't know how many layers the model has, but we need all layers from 0 to max covered
     assert set(transcoders.keys()) == set(range(max(transcoders.keys()) + 1)), (
