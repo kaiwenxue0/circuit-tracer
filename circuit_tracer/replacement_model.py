@@ -49,6 +49,8 @@ class ReplacementUnembed(nn.Module):
         return self.hook_post(x)
 
 
+# 用于diffusion模型的transcoder需要改这个代码
+# 改写HookedTransformer，或者重新写一个类
 class ReplacementModel(HookedTransformer):
     d_transcoder: int
     transcoders: nn.ModuleList
@@ -57,6 +59,8 @@ class ReplacementModel(HookedTransformer):
     skip_transcoder: bool
     scan: Optional[Union[str, List[str]]]
 
+    # 你给配置（config），我给你模型
+    # 自定义的AR模型可以用
     @classmethod
     def from_config(
         cls,
@@ -86,10 +90,47 @@ class ReplacementModel(HookedTransformer):
         return model
 
     @classmethod
+    def from_config_disk_model(
+        cls,
+        config: HookedTransformerConfig,
+        transcoder_set: str,
+        device: Optional[torch.device] = torch.device("cuda"),
+        dtype: Optional[torch.dtype] = torch.float32,
+        **kwargs,
+    ) -> "ReplacementModel":
+        """Create a ReplacementModel from the name of HookedTransformer and dict of transcoders
+
+        Args:
+            model_name (str): the name of the pretrained HookedTransformer that this
+                ReplacmentModel will inherit from
+            transcoder_set (str): Either a predefined transcoder set name, or a config file
+                defining where to load them from
+            device (torch.device, Optional): the device onto which to load the transcoders
+                and HookedTransformer.
+
+        Returns:
+            ReplacementModel: The loaded ReplacementModel
+        """
+        transcoders, feature_input_hook, feature_output_hook, scan = load_transcoder_set(
+            transcoder_set, device=device, dtype=dtype
+        )
+
+        return cls.from_config(
+            config,
+            transcoders,
+            feature_input_hook=feature_input_hook,
+            feature_output_hook=feature_output_hook,
+            scan=scan,
+            device=device,
+            dtype=dtype,
+            **kwargs,
+        )
+    # 你给模型名，我帮你加载模型 + 配置
+    @classmethod
     def from_pretrained_and_transcoders(
         cls,
         model_name: str,
-        transcoders: Dict[int, SingleLayerTranscoder],
+        transcoders: Dict[int, SingleLayerTranscoder], # 一个字典，键是层编号（int），值是对应的 SingleLayerTranscoder 模块，用于替换或解释该层的 MLP 计算
         feature_input_hook: str = "mlp.hook_in",
         feature_output_hook: str = "mlp.hook_out",
         scan: str = None,
@@ -126,7 +167,7 @@ class ReplacementModel(HookedTransformer):
         cls,
         model_name: str,
         transcoder_set: str,
-        device: Optional[torch.device] = torch.device("cuda"),
+        device: Optional[torch.device] = "cpu",
         dtype: Optional[torch.dtype] = torch.float32,
         **kwargs,
     ) -> "ReplacementModel":
@@ -167,7 +208,7 @@ class ReplacementModel(HookedTransformer):
     ):
         
         # 多卡分配设置
-        num_gpus = 8  # 有8块卡
+        num_gpus = 4  # 有8块卡
         transcoder_modules = []
 
         for i in range(self.cfg.n_layers):
@@ -185,6 +226,7 @@ class ReplacementModel(HookedTransformer):
         self.skip_transcoder = hasattr(transcoder_modules[0], 'W_skip') and transcoder_modules[0].W_skip is not None
         self.scan = scan
 
+        # 替换每一层MLP
         for block in self.blocks:
             block.mlp = ReplacementMLP(block.mlp)
 
@@ -277,6 +319,7 @@ class ReplacementModel(HookedTransformer):
             block.attn.rotary_sin = attn_masks["rotary_sin"]
             block.attn.rotary_cos = attn_masks["rotary_cos"]
 
+    # 我帮你设置好钩子函数，运行模型时自动抓下每层解释器的输出激活，存起来
     def _get_activation_caching_hooks(
         self,
         zero_bos: bool = False,
@@ -287,12 +330,8 @@ class ReplacementModel(HookedTransformer):
 
         def cache_activations(acts, hook, layer, zero_bos):
             acts = acts.to(self.transcoders[layer].W_enc.device)
-            transcoder_acts = (
-                self.transcoders[layer]
-                .encode(acts, apply_activation_function=apply_activation_function)
-                .detach()
-                .squeeze(0)
-            )
+            acts_encoded, _ = self.transcoders[layer].encode(acts, apply_activation_function=apply_activation_function)
+            transcoder_acts = acts_encoded.detach().squeeze(0)
             if zero_bos:
                 transcoder_acts[0] = 0
             if sparse:
@@ -309,6 +348,7 @@ class ReplacementModel(HookedTransformer):
         ]
         return activation_matrix, activation_hooks
 
+    # 重要：给我一句话，我告诉你每一层解释器提取了什么特征
     def get_activations(
         self,
         inputs: Union[str, torch.Tensor],
@@ -351,6 +391,7 @@ class ReplacementModel(HookedTransformer):
         finally:
             self.cfg.output_logits_soft_cap = current_softcap
 
+    # 重要功能函数
     @torch.no_grad()
     def setup_attribution(
         self,

@@ -15,7 +15,6 @@ import circuit_tracer
 from circuit_tracer.transcoder.activation_functions import JumpReLU
 from circuit_tracer.utils.hf_utils import download_hf_uris, parse_hf_uri
 
-
 class SingleLayerTranscoder(nn.Module):
     d_model: int
     d_transcoder: int
@@ -33,6 +32,7 @@ class SingleLayerTranscoder(nn.Module):
         d_transcoder: int,
         activation_function,
         layer_idx: int,
+        k: int,
         skip_connection: bool = False,
     ):
         """Single layer transcoder implementation, adapted from the JumpReLUSAE implementation here:
@@ -51,6 +51,7 @@ class SingleLayerTranscoder(nn.Module):
         self.d_model = d_model
         self.d_transcoder = d_transcoder
         self.layer_idx = layer_idx
+        self.k = k
 
         self.W_enc = nn.Parameter(torch.zeros(d_model, d_transcoder))
         self.W_dec = nn.Parameter(torch.zeros(d_transcoder, d_model))
@@ -64,25 +65,26 @@ class SingleLayerTranscoder(nn.Module):
 
         self.activation_function = activation_function
 
-    def encode(self, input_acts, k=0, apply_activation_function: bool = True):
+    def encode(self, input_acts, apply_activation_function: bool = True):
         
         pre_acts = input_acts.to(self.W_enc.dtype) @ self.W_enc + self.b_enc
         if not apply_activation_function:
-            return pre_acts
-        acts = self.activation_function(pre_acts)
-        if k != 0:
-            acts, indices = torch.topk(acts, k, dim=-1, sorted=False)
-            return acts, indices
+            acts = pre_acts
         else:
-            return acts
+            acts = self.activation_function(pre_acts)
+        if self.k != 0:
+            top_acts, indices = torch.topk(acts, self.k, dim=-1, sorted=False)
+            return top_acts, indices
+        else:
+            return acts, None
 
     def decode(self, acts, indices=None):
         def eager_decode(top_indices, top_acts, W_dec):
-            return nn.functional.embedding_bag(
-                top_indices, W_dec.mT, per_sample_weights=top_acts, mode="sum"
-            )
+            emb = nn.functional.embedding(top_indices, W_dec.T)  # [B, P, K, D]
+            weighted = emb * top_acts.unsqueeze(-1)              # [B, P, K, D]
+            return weighted.sum(dim=-2)       
         if indices is not None:
-            y = eager_decode(indices, acts.to(self.dtype), self.W_dec.mT)
+            y = eager_decode(indices, acts, self.W_dec.mT)
             return y + self.b_dec
         else:
             if acts.is_sparse:
@@ -100,9 +102,9 @@ class SingleLayerTranscoder(nn.Module):
         else:
             raise ValueError("Transcoder has no skip connection")
 
-    def forward(self, input_acts, k=0):
-        if k == 0:
-            transcoder_acts = self.encode(input_acts)
+    def forward(self, input_acts):
+        if self.k == 0:
+            transcoder_acts, _ = self.encode(input_acts)
             decoded = self.decode(transcoder_acts)
             decoded = decoded.detach()
             decoded.requires_grad = True
@@ -113,7 +115,7 @@ class SingleLayerTranscoder(nn.Module):
 
             return decoded
         else:
-            transcoder_acts, indices = self.encode(input_acts, k)
+            transcoder_acts, indices = self.encode(input_acts)
             decoded = self.decode(transcoder_acts, indices)
             decoded = decoded.detach()
             decoded.requires_grad = True
@@ -163,6 +165,7 @@ def load_relu_transcoder(
     device: torch.device = torch.device("cuda"),
     dtype: Optional[torch.dtype] = torch.float32,
 ):
+    k=128
     param_dict = load_file(path, device="cpu")
     
 
@@ -172,8 +175,6 @@ def load_relu_transcoder(
     param_dict["b_dec"] = param_dict.get("b_dec", None)
 
     param_dict["W_enc"] = param_dict["W_enc"].T.contiguous()
-    param_dict["W_dec"] = param_dict["W_dec"].T.contiguous()
-
     assert param_dict.get("log_thresholds") is None
     activation_function = F.relu
     with torch.device("meta"):
@@ -182,6 +183,7 @@ def load_relu_transcoder(
             param_dict["W_enc"].shape[1],
             activation_function,
             layer,
+            k,
             skip_connection="W_skip" in param_dict,
         )
     transcoder.load_state_dict(param_dict, assign=True)
@@ -214,7 +216,7 @@ def load_transcoder_set(
         package_path = resources.files(circuit_tracer)
         transcoder_config_file = package_path / "configs/gemmascope-l0-0.yaml"
         scan = "gemma-2-2b"
-    elif transcoder_config_file == "llama3-8b":
+    elif transcoder_config_file == "llama3":
         package_path = resources.files(circuit_tracer)
         transcoder_config_file = package_path / "configs/llama3_8B.yaml"
         scan = "llama-3-8b"

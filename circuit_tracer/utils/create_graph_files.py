@@ -22,7 +22,8 @@ def load_graph_data(file_path) -> Graph:
     return graph
 
 
-scan_to_d_transcoder = {"gemma-2-2b": 2**15, "llama-3-131k-relu": 2**17}
+scan_to_d_transcoder = {"gemma-2-2b": 2**15, "llama-3-131k-relu": 2**17,
+                        "llama-3-8b": 2**17}
 
 
 def create_nodes(graph: Graph, node_mask, tokenizer, cumulative_scores, scan):
