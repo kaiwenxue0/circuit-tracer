@@ -34,7 +34,7 @@
 ```bash
 circuit-tracer attribute \
   --prompt "The International Advanced Security Group (IAS" \
-  --transcoder_set llama3 \
+  --transcoder_set llama3-8b \
   --slug [Your_slug] \
   --graph_file_dir ./graph_files
 ```
