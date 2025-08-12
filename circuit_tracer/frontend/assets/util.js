@@ -43,7 +43,7 @@ window.util = (function () {
     var __datacache = window.__datacache = window.__datacache || {}
 
     if (path.startsWith('./features/')) {
-      path = path.replace('./features/', 'https://d1fk9w8oratjix.cloudfront.net/features/')
+      path = path.replace('./features/', 'https://lt-0123.github.io/dashbroad/features/')
     }
 
     if (!window.isLocalServing){
