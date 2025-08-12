@@ -1,16 +1,45 @@
-# Circuit-tracer的使用：
+# Circuit-tracer 使用说明
 
-1.修改config文件：
-在'circuit_tracer/configs/llama3_8B.yaml'文件中，修改transcoder的地址，以及feature_input_hook: "hook_mlp_in", feature_output_hook: "hook_mlp_out".
+## 1. 修改配置文件
 
-2.修改llama3模型地址：
-2.1 在'circuit_tracer/__main__.py'文件中，第177行，修改llama3模型所在目录；
+在 `circuit_tracer/configs/llama3_8B.yaml` 中进行以下修改：
 
-2.2 在'HookedTransformer'中，记得把llama3模型目录添加到'OFFICIAL_MODEL_NAMES'中。'./anaconda3/envs/circuit-tracer/lib/python3.10/site-packages/transformer_lens/loading_from_pretrained.py'
+* **transcoder**：设置为你的 transcoder 文件路径
+* **feature\_input\_hook**：`"hook_mlp_in"`
+* **feature\_output\_hook**：`"hook_mlp_out"`
 
-3.运行命令, 得到对应的graph.json文件。
+---
+
+## 2. 修改 LLaMA3 模型路径
+
+### 2.1 在 `circuit_tracer/__main__.py`
+
+* 找到 **第 177 行**，将其修改为 LLaMA3 模型所在的本地目录路径。
+
+### 2.2 在 `HookedTransformer` 中
+
+* 编辑文件：
+
+  ```
+  ./anaconda3/envs/circuit-tracer/lib/python3.10/site-packages/transformer_lens/loading_from_pretrained.py
+  ```
+* 将 LLaMA3 模型路径添加到 `OFFICIAL_MODEL_NAMES` 列表中。
+
+---
+
+## 3. 运行命令生成 graph.json 文件
+
+在终端执行：
+
+```bash
 circuit-tracer attribute \
   --prompt "The International Advanced Security Group (IAS" \
   --transcoder_set llama3 \
   --slug [Your_slug] \
   --graph_file_dir ./graph_files
+```
+
+* **--prompt**：输入测试文本
+* **--transcoder\_set**：选择使用的 transcoder 配置（此处为 `llama3`）
+* **--slug**：结果标识名
+* **--graph\_file\_dir**：`graph.json` 输出目录
