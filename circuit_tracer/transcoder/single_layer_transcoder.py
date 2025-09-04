@@ -10,10 +10,83 @@ import yaml
 from huggingface_hub import hf_hub_download
 from safetensors.torch import load_file
 from torch import nn
+from torch.autograd import Function
 
 import circuit_tracer
 from circuit_tracer.transcoder.activation_functions import JumpReLU
 from circuit_tracer.utils.hf_utils import download_hf_uris, parse_hf_uri
+
+def grad_input_via_index_select(indices, weight, grad_values):
+    D = weight.size(1)
+    # 取出选中的权重行：[..., K, D]
+    W_sel = weight.index_select(0, indices.reshape(-1)).reshape(*indices.shape, D)
+    # 加权求和到最后一维 K 上，得 [..., D]
+    return (grad_values.to(weight.dtype).unsqueeze(-1) * W_sel).sum(dim=-2)
+
+class TopKEncode(Function):
+    @staticmethod
+    def forward(ctx, x, W_enc, b_enc, k: int, use_activation: bool = True, act: str = "relu"):
+        """
+        x:      [N, D]
+        q:  [D, M]
+        b_enc:  [M] or None
+        k:      top-k
+        """
+        # 线性 + 可选激活（与原 encode 一致）
+        pre = x.to(W_enc.dtype) @ W_enc
+        if b_enc is not None:
+            pre = pre + b_enc
+        if use_activation:
+            if act == "relu":
+                acts = F.relu(pre)
+            elif act == "gelu":
+                acts = F.gelu(pre)
+            else:
+                raise ValueError(f"Unsupported activation: {act}")
+        else:
+            acts = pre
+
+        # 逐样本取 top-k
+        values, indices = torch.topk(acts, k, dim=-1, sorted=False)
+
+        # 反向需要：输入、W 的“行向量视图”（即 W^T 的行是每个单元的权重）、以及 indices
+        W_T = W_enc.transpose(0, 1).contiguous()  # [M, D]
+        ctx.save_for_backward(x, W_T, indices)
+        ctx.M = W_T.shape[0]
+        ctx.has_bias = b_enc is not None
+        return values, indices
+
+    @staticmethod
+    def backward(ctx, g_values, g_indices):
+        x, W_T, indices = ctx.saved_tensors
+        # --- dL/dx ---
+        # sum_j g_values * W_j ；用 embedding_bag 高效聚合
+        g_x = grad_input_via_index_select(indices,  W_T, g_values.type_as(W_T))
+
+        # --- dL/dW_T ---
+        g_W_T = torch.zeros_like(W_T)    # [M, D]
+        B, K = g_values.shape
+        D = x.shape[1]
+        chunk = 32
+        for i in range(0, K, chunk):
+            gv = g_values[:, i:i+chunk]                  # [B, C]
+            idx = indices[:, i:i+chunk]                  # [B, C]
+            contrib = (gv.unsqueeze(2) * x.unsqueeze(1)) # [B, C, D]
+            g_W_T.index_add_(0, idx.reshape(-1), contrib.reshape(-1, D).type_as(g_W_T))
+
+        # --- dL/db ---
+        g_b = None
+        if ctx.has_bias:
+            g_b = torch.zeros(ctx.M, dtype=g_values.dtype, device=g_values.device)
+            g_b.index_add_(0, indices.reshape(-1), g_values.reshape(-1))
+
+        # 映回到原 W_enc 形状 [D, M]
+        g_W_enc = g_W_T.transpose(0, 1).contiguous()
+
+        # 对 非张量参数（k/use_activation/act）返回 None
+        return g_x, g_W_enc, g_b, None, None, None
+
+
 
 class SingleLayerTranscoder(nn.Module):
     d_model: int
@@ -66,23 +139,20 @@ class SingleLayerTranscoder(nn.Module):
         self.activation_function = activation_function
 
     def encode(self, input_acts, apply_activation_function: bool = True):
-        
-        pre_acts = input_acts.to(self.W_enc.dtype) @ self.W_enc + self.b_enc
-        if not apply_activation_function:
-            acts = pre_acts
-        else:
-            acts = self.activation_function(pre_acts)
-        if self.k != 0:
-            top_acts, indices = torch.topk(acts, self.k, dim=-1, sorted=False)
-            return top_acts, indices
-        else:
+        if self.k == 0:
+            pre = input_acts.to(self.W_enc.dtype) @ self.W_enc + (self.b_enc if self.b_enc is not None else 0)
+            acts = self.activation_function(pre) if apply_activation_function else pre
             return acts, None
+        else:
+            # 假设 self.activation_function 是 ReLU/GELU 之一；传个字符串标识
+            act_name = "relu" if self.activation_function is F.relu else "gelu"
+            return TopKEncode.apply(input_acts, self.W_enc, self.b_enc, self.k, apply_activation_function, act_name)
 
     def decode(self, acts, indices=None):
         def eager_decode(top_indices, top_acts, W_dec):
-            emb = nn.functional.embedding(top_indices, W_dec.T)  # [B, P, K, D]
-            weighted = emb * top_acts.unsqueeze(-1)              # [B, P, K, D]
-            return weighted.sum(dim=-2)       
+            return grad_input_via_index_select(
+            top_indices, W_dec.mT, top_acts
+        )  
         if indices is not None:
             y = eager_decode(indices, acts, self.W_dec.mT)
             return y + self.b_dec
@@ -165,16 +235,16 @@ def load_relu_transcoder(
     device: torch.device = torch.device("cuda"),
     dtype: Optional[torch.dtype] = torch.float32,
 ):
-    k=128
+    k=192
     param_dict = load_file(path, device="cpu")
     
 
     param_dict["W_enc"] = param_dict.pop("encoder.weight")
     param_dict["b_enc"] = param_dict.pop("encoder.bias", None)
-    param_dict["W_dec"] = param_dict["W_dec"]  # 已经存在就不动
+    param_dict["W_dec"] = param_dict["W_dec"] 
     param_dict["b_dec"] = param_dict.get("b_dec", None)
 
-    param_dict["W_enc"] = param_dict["W_enc"].T.contiguous()
+    param_dict["W_enc"] = param_dict["W_enc"].mT.contiguous()
     assert param_dict.get("log_thresholds") is None
     activation_function = F.relu
     with torch.device("meta"):
@@ -216,7 +286,7 @@ def load_transcoder_set(
         package_path = resources.files(circuit_tracer)
         transcoder_config_file = package_path / "configs/gemmascope-l0-0.yaml"
         scan = "gemma-2-2b"
-    elif transcoder_config_file == "llama3":
+    elif transcoder_config_file == "llama3-8b":
         package_path = resources.files(circuit_tracer)
         transcoder_config_file = package_path / "configs/llama3_8B.yaml"
         scan = "llama-3-8b"
