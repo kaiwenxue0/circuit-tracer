@@ -172,8 +172,7 @@ def run_attribution(args, parser):
         elif args.transcoder_set == "llama":
             args.model = "meta-llama/Llama-3.2-1B"
         elif args.transcoder_set == "llama3-8b":
-            args.model = "/mnt/xuekaiwen/models/models--meta-llama--Meta-Llama-3-8B/snapshots/8cde5ca8380496c9a6cc7ef3a8b46a0372a1d920"
-            
+            args.model = "/mnt/workspace/xuekaiwen/data/meta-llama/Meta-Llama-3-8B"
         else:
             parser.error("--model must be specified when not using 'gemma' or 'llama' presets")
 

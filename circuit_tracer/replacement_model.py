@@ -208,7 +208,7 @@ class ReplacementModel(HookedTransformer):
     ):
         
         # 多卡分配设置
-        num_gpus = 4  # 有8块卡
+        num_gpus = 2  # 有8块卡
         transcoder_modules = []
 
         for i in range(self.cfg.n_layers):
@@ -434,6 +434,7 @@ class ReplacementModel(HookedTransformer):
         activation_matrix, activation_hooks = self._get_activation_caching_hooks(
             sparse=sparse, zero_bos=zero_bos
         )
+        print("self.hook_dict: ", self.hook_dict)
         mlp_in_cache, mlp_in_caching_hooks, _ = self.get_caching_hooks(
             lambda name: self.feature_input_hook in name
         )
@@ -470,6 +471,8 @@ class ReplacementModel(HookedTransformer):
         ]
 
         # note: activation_hooks must come before error_hooks
+        print("activation_hooks: ", activation_hooks) 
+        print("mlp_in_caching_hooks: ", mlp_in_caching_hooks)
         logits = self.run_with_hooks(
             tokens, fwd_hooks=activation_hooks + mlp_in_caching_hooks + error_hooks
         )

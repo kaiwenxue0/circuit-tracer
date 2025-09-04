@@ -1,132 +1,137 @@
 model_name: "Llama3-8B"
-feature_input_hook: "hook_mlp_in"
-feature_output_hook: 'hook_mlp_out'
+# feature_input_hook: "hook_resid_mid"
+feature_input_hook: "mlp.hook_in"
+feature_output_hook: "mlp.hook_out"
+# feature_input_hook: "ln2.hook_normalized"
+# feature_output_hook: "hook_mlp_out"
+# feature_input_hook: "hook_mlp_in"
+# feature_output_hook: 'hook_mlp_out'
 
 transcoders:
   - id: "Llama-3-relu-0"
     layer: 0
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_llama38b_latents32768_bs64_wandb_gsml4/layers.0/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp0/layers.0.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-1"
     layer: 1
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_1_5_9_13_17_21_25_gsml4/layers.1/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp1/layers.1.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-2"
     layer: 2
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_2_6_10_14_18_22_26_gsml4/layers.2/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp2/layers.2.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-3"
     layer: 3
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_3_7_11_15_19_23_27_gsml4/layers.3/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp3/layers.3.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-4"
     layer: 4
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_llama38b_latents32768_bs64_wandb_gsml4/layers.4/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp4/layers.4.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-5"
     layer: 5
-    filepath: "//mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_1_5_9_13_17_21_25_gsml4/layers.5/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp5/layers.5.mlp/sae.safetensors"
   
   - id: "Llama-3-relu-6"
     layer: 6
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_2_6_10_14_18_22_26_gsml4/layers.6/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp6/layers.6.mlp/sae.safetensors"
  
   - id: "Llama-3-relu-7"
     layer: 7
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_3_7_11_15_19_23_27_gsml4/layers.7/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp7/layers.7.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-8"
     layer: 8
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_llama38b_latents32768_bs64_wandb_gsml4/layers.8/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp8/layers.8.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-9"
     layer: 9
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_1_5_9_13_17_21_25_gsml4/layers.9/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp9/layers.9.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-10"
     layer: 10
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_2_6_10_14_18_22_26_gsml4/layers.10/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp10/layers.10.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-11"
     layer: 11
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_3_7_11_15_19_23_27_gsml4//layers.11/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp11/layers.11.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-12"
     layer: 12
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_llama38b_latents32768_bs64_wandb_gsml4/layers.12/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp12/layers.12.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-13"
     layer: 13
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_1_5_9_13_17_21_25_gsml4/layers.13/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp13/layers.13.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-14"
     layer: 14
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_2_6_10_14_18_22_26_gsml4/layers.14/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp14/layers.14.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-15"
     layer: 15
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_3_7_11_15_19_23_27_gsml4/layers.15/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp15/layers.15.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-16"
     layer: 16
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_llama38b_latents32768_bs64_wandb_gsml4/layers.16/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp16/layers.16.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-17"
     layer: 17
-    filepath: "//mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_1_5_9_13_17_21_25_gsml4/layers.17/sae.safetensors"
+    filepath: "//mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp17/layers.17.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-18"
     layer: 18
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_2_6_10_14_18_22_26_gsml4/layers.18/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp18/layers.18.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-19"
     layer: 19
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_3_7_11_15_19_23_27_gsml4/layers.19/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp19/layers.19.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-20"
     layer: 20
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_llama38b_latents32768_bs64_wandb_gsml4/layers.20/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp20/layers.20.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-21"
     layer: 21
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_1_5_9_13_17_21_25_gsml4/layers.21/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp21/layers.21.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-22"
     layer: 22
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_2_6_10_14_18_22_26_gsml4/layers.22/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp22/layers.22.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-23"
     layer: 23
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_3_7_11_15_19_23_27_gsml4/layers.23/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp23/layers.23.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-24"
     layer: 24
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_llama38b_latents32768_bs64_wandb_gsml4/layers.24/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp24/layers.24.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-25"
     layer: 25
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_1_5_9_13_17_21_25_gsml4/layers.25/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp25/layers.25.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-26"
     layer: 26
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_2_6_10_14_18_22_26_gsml4/layers.26/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp26/layers.26.mlp/sae.safetensors"
  
   - id: "Llama-3-relu-27"
     layer: 27
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_3_7_11_15_19_23_27_gsml4/layers.27/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp27/layers.27.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-28"
     layer: 28
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_llama38b_latents32768_bs64_wandb_gsml4/layers.28/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp28/layers.28.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-29"
     layer: 29
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_29_30_31_gsml4/layers.29/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp29/layers.29.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-30"
     layer: 30
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_29_30_31_gsml4/layers.30/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp30/layers.30.mlp/sae.safetensors"
 
   - id: "Llama-3-relu-31"
     layer: 31
-    filepath: "/mnt/xuekaiwen/models/transcoder/checkpoints/sparsify_layers_29_30_31_gsml4/layers.31/sae.safetensors"
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llama3/sparsify_llada8b_latents32768_bs256_mlp31/layers.31.mlp/sae.safetensors"

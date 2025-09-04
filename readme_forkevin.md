@@ -35,11 +35,21 @@
 circuit-tracer attribute \
   --prompt "The International Advanced Security Group (IAS" \
   --transcoder_set llama3-8b \
-  --slug [Your_slug] \
-  --graph_file_dir ./graph_files
+  --slug kevin \
+  --graph_file_dir ./graph_files_date_8_26_step_8k_lr_1e_4 \
+  --server
 ```
 
 * **--prompt**：输入测试文本
 * **--transcoder\_set**：选择使用的 transcoder 配置（此处为 `llama3`）
 * **--slug**：结果标识名
 * **--graph\_file\_dir**：`graph.json` 输出目录
+
+
+# 前端
+circuit-tracer attribute \
+  --prompt "The International Advanced Security Group (IAS" \
+  --transcoder_set llama3-8b \
+  --slug kevin \
+  --graph_file_dir ./graph_files \
+  --server
