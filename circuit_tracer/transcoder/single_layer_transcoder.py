@@ -138,15 +138,30 @@ class SingleLayerTranscoder(nn.Module):
 
         self.activation_function = activation_function
 
-    def encode(self, input_acts, apply_activation_function: bool = True):
+    def encode(self, input_acts, apply_activation_function: bool = True, return_sparse: bool = True):
         if self.k == 0:
             pre = input_acts.to(self.W_enc.dtype) @ self.W_enc + (self.b_enc if self.b_enc is not None else 0)
             acts = self.activation_function(pre) if apply_activation_function else pre
-            return acts, None
+            return acts, None, None
         else:
             # 假设 self.activation_function 是 ReLU/GELU 之一；传个字符串标识
             act_name = "relu" if self.activation_function is F.relu else "gelu"
-            return TopKEncode.apply(input_acts, self.W_enc, self.b_enc, self.k, apply_activation_function, act_name)
+            top_acts, indices = TopKEncode.apply(input_acts, self.W_enc, self.b_enc, self.k, apply_activation_function, act_name)
+
+            if return_sparse:
+                sparse_acts = torch.zeros(
+                    top_acts.size(0),   # batch_size
+                    top_acts.size(1),   # token_num
+                    self.d_transcoder,  # d_transcoder
+                    device=top_acts.device,
+                    dtype=top_acts.dtype,
+                )
+                sparse_acts.scatter_(2, indices, top_acts)
+                # print("[DEBUG]sparse_acts shape:", sparse_acts.shape)
+                
+                return top_acts, indices, sparse_acts
+            else:
+                return top_acts, indices, None
 
     def decode(self, acts, indices=None):
         def eager_decode(top_indices, top_acts, W_dec):
@@ -174,7 +189,7 @@ class SingleLayerTranscoder(nn.Module):
 
     def forward(self, input_acts):
         if self.k == 0:
-            transcoder_acts, _ = self.encode(input_acts)
+            transcoder_acts, _, _ = self.encode(input_acts)
             decoded = self.decode(transcoder_acts)
             decoded = decoded.detach()
             decoded.requires_grad = True
@@ -185,7 +200,7 @@ class SingleLayerTranscoder(nn.Module):
 
             return decoded
         else:
-            transcoder_acts, indices = self.encode(input_acts)
+            transcoder_acts, indices, _ = self.encode(input_acts)
             decoded = self.decode(transcoder_acts, indices)
             decoded = decoded.detach()
             decoded.requires_grad = True
@@ -294,9 +309,10 @@ def load_transcoder_set(
         package_path = resources.files(circuit_tracer)
         transcoder_config_file = package_path / "configs/llama-relu.yaml"
         scan = "llama-3-131k-relu"
-    elif transcoder_config_file == "llada":
+    elif transcoder_config_file == "llada1.5-8b":
         package_path = resources.files(circuit_tracer)
         transcoder_config_file = package_path / "configs/llada1.5_8B.yaml"
+        scan = "llada1.5-8b"
 
     with open(transcoder_config_file, "r") as file:
         config = yaml.safe_load(file)

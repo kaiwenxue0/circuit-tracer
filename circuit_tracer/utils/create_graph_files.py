@@ -23,7 +23,7 @@ def load_graph_data(file_path) -> Graph:
 
 
 scan_to_d_transcoder = {"gemma-2-2b": 2**15, "llama-3-131k-relu": 2**17,
-                        "llama-3-8b": 2**17}
+                        "llama-3-8b": 2**17, "llada1.5-8b": 2**17}
 
 
 def create_nodes(graph: Graph, node_mask, tokenizer, cumulative_scores, scan):
@@ -63,8 +63,13 @@ def create_nodes(graph: Graph, node_mask, tokenizer, cumulative_scores, scan):
             )
         elif node_idx in range(token_end_idx, len(cumulative_scores)):
             pos = node_idx - token_end_idx
+            ctx_idx = (
+                int(graph.target_ctx_idx)
+                if hasattr(graph, "target_ctx_idx") and graph.target_ctx_idx is not None
+                else graph.n_pos - 1
+            )
             nodes[node_idx] = Node.logit_node(
-                pos=graph.n_pos - 1,
+                pos=ctx_idx,
                 vocab_idx=graph.logit_tokens[pos],
                 token=process_token(tokenizer.decode(graph.logit_tokens[pos])),
                 target_logit=pos == 0,

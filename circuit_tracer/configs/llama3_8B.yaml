@@ -1,5 +1,6 @@
 model_name: "Llama3-8B"
 # feature_input_hook: "hook_resid_mid"
+# feature_input_hook: "ln2.hook_normalized"
 feature_input_hook: "mlp.hook_in"
 feature_output_hook: "mlp.hook_out"
 # feature_input_hook: "ln2.hook_normalized"

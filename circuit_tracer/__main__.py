@@ -77,6 +77,12 @@ def main():
         default=7500,
         help="Maximum number of feature nodes.",
     )
+    attr_parser.add_argument(
+        "--model_type",
+        type=str,
+        default="ARM",
+        help="The model type to attribute.",
+    )
     attr_parser.add_argument("--verbose", action="store_true", help="Display progress information.")
 
     # Arguments for graph creation
@@ -173,6 +179,8 @@ def run_attribution(args, parser):
             args.model = "meta-llama/Llama-3.2-1B"
         elif args.transcoder_set == "llama3-8b":
             args.model = "/mnt/workspace/xuekaiwen/data/meta-llama/Meta-Llama-3-8B"
+        elif args.transcoder_set == "llada1.5-8b":
+            args.model = "/home/notebook/code/group/xuekaiwen/mask_diffusion/interpretable_models/data/GSAI-ML/debug_20251004/LLaDA-1.5.cleaned"
         else:
             parser.error("--model must be specified when not using 'gemma' or 'llama' presets")
 
@@ -223,6 +231,7 @@ def run_attribution(args, parser):
         verbose=args.verbose,
         offload=args.offload,
         max_feature_nodes=args.max_feature_nodes,
+        model_type=args.model_type
     )
 
     # Save to file if output path specified

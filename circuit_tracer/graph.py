@@ -15,6 +15,8 @@ class Graph:
     logit_probabilities: torch.Tensor
     cfg: HookedTransformerConfig
     scan: Optional[Union[str, List[str]]]
+    target_ctx_idx: Optional[int]
+
 
     def __init__(
         self,
@@ -28,6 +30,7 @@ class Graph:
         selected_features: torch.Tensor,
         activation_values: torch.Tensor,
         scan: Optional[Union[str, List[str]]] = None,
+        target_ctx_idx: Optional[int] = None,   # New add for MDM
     ):
         """
         A graph object containing the adjacency matrix describing the direct effect of each
@@ -69,6 +72,7 @@ class Graph:
         self.scan = scan
         self.selected_features = selected_features
         self.activation_values = activation_values
+        self.target_ctx_idx = target_ctx_idx    #  new add for MDM
 
     def to(self, device):
         """Send all relevant tensors to the device (cpu, cuda, etc.)
@@ -98,6 +102,7 @@ class Graph:
             "selected_features": self.selected_features,
             "activation_values": self.activation_values,
             "scan": self.scan,
+            "target_ctx_idx": getattr(self, "target_ctx_idx", None), 
         }
         torch.save(d, path)
 

@@ -158,7 +158,7 @@ class ReplacementModel(HookedTransformer):
             **kwargs,
         )
         model._configure_replacement_model(
-            transcoders, feature_input_hook, feature_output_hook, scan
+            transcoders, feature_input_hook, feature_output_hook,  scan
         )
         return model
 
@@ -330,12 +330,15 @@ class ReplacementModel(HookedTransformer):
 
         def cache_activations(acts, hook, layer, zero_bos):
             acts = acts.to(self.transcoders[layer].W_enc.device)
-            acts_encoded, _ = self.transcoders[layer].encode(acts, apply_activation_function=apply_activation_function)
+            _, _, acts_encoded = self.transcoders[layer].encode(acts, apply_activation_function=apply_activation_function)
+            # print(f"[DEBUG] acts_encoded.shape={acts_encoded.shape}, mean={acts_encoded.mean().item():.4f}")
             transcoder_acts = acts_encoded.detach().squeeze(0)
             if zero_bos:
                 transcoder_acts[0] = 0
             if sparse:
+                # print("sparse or not: True")
                 activation_matrix[layer] = transcoder_acts.to_sparse()
+                # print("[DEBUG] activation[layer]:" , activation_matrix[layer].shape)
             else:
                 activation_matrix[layer] = transcoder_acts
 
@@ -434,7 +437,7 @@ class ReplacementModel(HookedTransformer):
         activation_matrix, activation_hooks = self._get_activation_caching_hooks(
             sparse=sparse, zero_bos=zero_bos
         )
-        print("self.hook_dict: ", self.hook_dict)
+        
         mlp_in_cache, mlp_in_caching_hooks, _ = self.get_caching_hooks(
             lambda name: self.feature_input_hook in name
         )
@@ -486,6 +489,84 @@ class ReplacementModel(HookedTransformer):
             activation_matrix = activation_matrix.coalesce()
 
         token_vectors = self.W_E[tokens].detach()  # (n_pos, d_model)
+        return logits, activation_matrix, error_vectors, token_vectors
+
+    @torch.no_grad()
+    def setup_attribution_llada(
+        self,
+        inputs: torch.Tensor,   # 允许传已经拼好 [prompt + masks] 的 tensor
+        sparse: bool = False,
+        zero_bos: bool = True,
+    ):
+        """
+        LLaDA 版本的 attribution setup:
+        - 支持 mask tokens
+        - logits 在所有位置都有意义，不仅仅是最后一个
+        """
+        assert isinstance(inputs, torch.Tensor), "LLaDA attribution expects tensor inputs"
+        tokens = inputs.squeeze(0)
+        assert tokens.ndim == 1, "Tokens must be 1D"
+
+        # special tokens (和原版一致)
+        special_tokens = []
+        for special_token in self.tokenizer.special_tokens_map.values():
+            if isinstance(special_token, list):
+                special_tokens.extend(special_token)
+            else:
+                special_tokens.append(special_token)
+        special_token_ids = self.tokenizer.convert_tokens_to_ids(special_tokens)
+        zero_bos = zero_bos and tokens[0].cpu().item() in special_token_ids
+
+        # cache hooks
+        activation_matrix, activation_hooks = self._get_activation_caching_hooks(
+            sparse=sparse, zero_bos=zero_bos
+        )
+        mlp_in_cache, mlp_in_caching_hooks, _ = self.get_caching_hooks(
+            lambda name: self.feature_input_hook in name
+        )
+
+        error_vectors = torch.zeros(
+            [self.cfg.n_layers, len(tokens), self.cfg.d_model],
+            device=self.cfg.device,
+            dtype=self.cfg.dtype,
+        )
+
+        fvu_values = torch.zeros(
+            [self.cfg.n_layers, len(tokens)],
+            device=self.cfg.device,
+            dtype=torch.float32,
+        )
+
+        def compute_error_hook(acts, hook, layer):
+            in_hook = f"blocks.{layer}.{self.feature_input_hook}"
+            input_acts = mlp_in_cache[in_hook]
+            transcoder = self.transcoders[layer]
+            input_acts = input_acts.to(transcoder.W_enc.device)
+            reconstruction = transcoder(input_acts)
+            acts = acts.to(reconstruction.device)
+            error = acts - reconstruction
+            error_vectors[layer] = error
+            total_variance = (acts - acts.mean(dim=-2, keepdim=True)).pow(2).sum(dim=-1)
+            fvu_values[layer] = error.pow(2).sum(dim=-1) / total_variance
+
+        error_hooks = [
+            (f"blocks.{layer}.{self.feature_output_hook}", partial(compute_error_hook, layer=layer))
+            for layer in range(self.cfg.n_layers)
+        ]
+
+        # forward with hooks
+        logits = self.run_with_hooks(
+            tokens, fwd_hooks=activation_hooks + mlp_in_caching_hooks + error_hooks
+        )   # logits: [1, L, V]
+
+        if zero_bos:
+            error_vectors[:, 0] = 0
+
+        activation_matrix = torch.stack([t.to(self.cfg.device) for t in activation_matrix])
+        if sparse:
+            activation_matrix = activation_matrix.coalesce()
+
+        token_vectors = self.W_E[tokens].detach()
         return logits, activation_matrix, error_vectors, token_vectors
 
     def setup_intervention_with_freeze(

@@ -34,9 +34,21 @@
 ```bash
 circuit-tracer attribute \
   --prompt "The International Advanced Security Group (IAS" \
-  --transcoder_set llama3-8b \
+  --transcoder_set llada1.5-8b \
   --slug kevin \
-  --graph_file_dir ./graph_files_date_8_26_step_8k_lr_1e_4 \
+  --graph_file_dir ./graph_files_llada_date_10_30 \
+  --max_feature_nodes 2000 \
+  --model_type MDM
+  --server
+```
+
+```bash
+circuit-tracer attribute \
+  --prompt "Fact: the capital of the state containing Dallas is" \
+  --transcoder_set llada1.5-8b \
+  --slug kevin \
+  --graph_file_dir ./graph_files_llama_date_10_11 \
+  --max_feature_nodes 2000
   --server
 ```
 

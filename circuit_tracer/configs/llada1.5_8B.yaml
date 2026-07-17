@@ -1,0 +1,132 @@
+model_name: "GSAI-ML/LLaDA-1.5"
+feature_input_hook: "mlp.hook_in"
+feature_output_hook: "mlp.hook_out"
+
+transcoders:
+  - id: "LLaDA-1.5-relu-0"
+    layer: 0
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp0/transformer.blocks.0.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-1"
+    layer: 1
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp1/transformer.blocks.1.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-2"
+    layer: 2
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp2/transformer.blocks.2.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-3"
+    layer: 3
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp3/transformer.blocks.3.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-4"
+    layer: 4
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp4/transformer.blocks.4.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-5"
+    layer: 5
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp5/transformer.blocks.5.mlp_mod/sae.safetensors"
+  
+  - id: "LLaDA-1.5-relu-6"
+    layer: 6
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp6/transformer.blocks.6.mlp_mod/sae.safetensors"
+ 
+  - id: "LLaDA-1.5-relu-7"
+    layer: 7
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp7/transformer.blocks.7.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-8"
+    layer: 8
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp8/transformer.blocks.8.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-9"
+    layer: 9
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp9/transformer.blocks.9.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-10"
+    layer: 10
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp10/transformer.blocks.10.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-11"
+    layer: 11
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp11/transformer.blocks.11.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-12"
+    layer: 12
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp12/transformer.blocks.12.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-13"
+    layer: 13
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp13/transformer.blocks.13.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-14"
+    layer: 14
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp14/transformer.blocks.14.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-15"
+    layer: 15
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp15/transformer.blocks.15.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-16"
+    layer: 16
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp16/transformer.blocks.16.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-17"
+    layer: 17
+    filepath: "//mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp17/transformer.blocks.17.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-18"
+    layer: 18
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp18/transformer.blocks.18.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-19"
+    layer: 19
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp19/transformer.blocks.19.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-20"
+    layer: 20
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp20/transformer.blocks.20.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-21"
+    layer: 21
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp21/transformer.blocks.21.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-22"
+    layer: 22
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp22/transformer.blocks.22.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-23"
+    layer: 23
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp23/transformer.blocks.23.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-24"
+    layer: 24
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp24/transformer.blocks.24.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-25"
+    layer: 25
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp25/transformer.blocks.25.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-26"
+    layer: 26
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp26/transformer.blocks.26.mlp_mod/sae.safetensors"
+ 
+  - id: "LLaDA-1.5-relu-27"
+    layer: 27
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp27/transformer.blocks.27.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-28"
+    layer: 28
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp28/transformer.blocks.28.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-29"
+    layer: 29
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp29/transformer.blocks.29.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-30"
+    layer: 30
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp30/transformer.blocks.30.mlp_mod/sae.safetensors"
+
+  - id: "LLaDA-1.5-relu-31"
+    layer: 31
+    filepath: "/mnt/workspace/xuekaiwen/mask_diffusion/interpretable_models/remote/sparsify/checkpoints/llada1.5/llada8b_latents32768_bs512_mlp31/transformer.blocks.31.mlp_mod/sae.safetensors"
